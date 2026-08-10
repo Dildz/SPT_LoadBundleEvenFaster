@@ -27,12 +27,37 @@ namespace SPT_LoadBundleEvenFaster.Plugin
     {
         public static ManualLogSource LogSource;
 
+        // Resolved concurrency for CRC validation. Set from config in Awake, so it cannot be
+        // readonly and cannot be computed at type-init like the old hardcoded cap was.
+        public static int MaxConcurrentCrc;
+
         // Global flag indicating whether multithreaded validation succeeded
         public static bool ValidationSucceeded = false;
 
         private void Awake()
         {
             LogSource = Logger;
+
+            // Exposed in the F12 config manager. The previous behaviour capped concurrency at 8
+            // threads no matter how many cores the machine had, which left larger CPUs idle.
+            int configuredCrcThreads = Config.Bind(
+                "Performance",
+                "MaxConcurrentCrcThreads",
+                0,
+                new ConfigDescription(
+                    "Maximum number of concurrent CRC validation threads. 0 = use all logical CPU cores (default). Reduce if you experience stuttering during load.",
+                    new AcceptableValueRange<int>(0, 256))).Value;
+
+            // Never exceed the actual core count - asking for more threads than cores only adds
+            // contention. 0 means "all of them".
+            MaxConcurrentCrc = configuredCrcThreads == 0
+                ? Environment.ProcessorCount
+                : Math.Min(configuredCrcThreads, Environment.ProcessorCount);
+
+            LogSource.LogInfo($"MaxConcurrentCrc set to {MaxConcurrentCrc} (configured: {configuredCrcThreads}, CPU cores: {Environment.ProcessorCount})");
+
+            // Must run after the config read above - the semaphore is sized from MaxConcurrentCrc.
+            HelperMethods.InitSemaphore();
 
             // Initialize CRC acceleration module (checks dependencies via reflection)
             HelperMethods.InitCrcAccelerator();
@@ -90,9 +115,14 @@ namespace SPT_LoadBundleEvenFaster.Plugin
 
     static class HelperMethods
     {
-        // Dynamically get CPU thread count
-        private static readonly int MAX_CONCURRENT_CRC = Environment.ProcessorCount >= 8 ? 8 : Environment.ProcessorCount;
-        private static readonly System.Threading.SemaphoreSlim _crcSemaphore = new System.Threading.SemaphoreSlim(MAX_CONCURRENT_CRC);
+        // Sized from Plugin.MaxConcurrentCrc, which is only known once config has been read, so
+        // this is assigned by InitSemaphore() from Awake rather than at type-init.
+        private static System.Threading.SemaphoreSlim _crcSemaphore;
+
+        internal static void InitSemaphore()
+        {
+            _crcSemaphore = new System.Threading.SemaphoreSlim(Plugin.MaxConcurrentCrc);
+        }
 
         // Native delegate definition corresponding to the libcrc32_pclmulqdq.dll interface
         // uint crc32_pclmulqdq(uint crc, byte* buf, IntPtr len)
@@ -253,7 +283,7 @@ namespace SPT_LoadBundleEvenFaster.Plugin
                 int totalBundles = bundles.Count;
 
                 Plugin.LogSource.LogInfo($"ValidateBundlesStreamingAsync: Starting parallel bundle validation for {totalBundles} bundles using {(_useNativeCrc ? "Native PCLMULQDQ" : "C# Fallback")}");
-                Plugin.LogSource.LogInfo($"ValidateBundlesStreamingAsync: Max concurrent CRC tasks set to {MAX_CONCURRENT_CRC} based on CPU thread count.");
+                Plugin.LogSource.LogInfo($"ValidateBundlesStreamingAsync: Max concurrent CRC tasks set to {Plugin.MaxConcurrentCrc}.");
                 var checks = bundles.Select(bundle => ValidateSingleBundleAsync(bundle));
                 bool[] results = await Task.WhenAll(checks).ConfigureAwait(false);
 
