@@ -216,7 +216,10 @@ namespace SPT_LoadBundleEvenFaster.Plugin
                         else
                         {
                             // === Slow path: default C# implementation ===
-                            crc = Crc32.Update(crc, new ReadOnlySpan<byte>(buffer, 0, bytesRead));
+                            // Fully qualified: the EFT client assembly declares its own Crc32 in the
+                            // global namespace, which wins name lookup over the SPT.Custom.Utils
+                            // import and has no Update method.
+                            crc = SPT.Custom.Utils.Crc32.Update(crc, new ReadOnlySpan<byte>(buffer, 0, bytesRead));
                         }
                     }
                 }
