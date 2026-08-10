@@ -101,7 +101,7 @@ jobs:
           # !!! UPDATE THIS BODY BEFORE TAGGING A NEW RELEASE !!!
           # It is baked in verbatim, so a stale body ships the previous version's notes.
           body: |
-            Fork of [s8ga/SPT_LoadBundleEvenFaster](https://github.com/s8ga/SPT_LoadBundleEvenFaster), built against **SPT 4.1.2**.
+            Fork of [s8ga/SPT_LoadBundleEvenFaster](https://github.com/s8ga/SPT_LoadBundleEvenFaster), built against **SPT 4.1.2**. Plugin version **1.1.0**, from upstream's 1.0.1.
 
             ## Install
 
@@ -118,7 +118,11 @@ jobs:
 
             ## Testing status
 
-            Built and packaged by CI. **Not yet verified in a running raid.** Please report anything odd.
+            **Pre-release.** Built and packaged by CI against SPT 4.1.2 references, and that is all that has been established so far. It has **never been loaded by the game**: not on a server, not on a headless client, not on a player client, and no raid has been run with it.
+
+            The plugin touches bundle loading, which happens on every client at startup, so a fault here shows up as a slow, failed or hanging load rather than something subtle. Test it somewhere you can afford to break.
+
+            Being verified now on a 4.1.2 stack with a headless and a player client. A stable release follows once that passes.
 
             ## Credits
 
