@@ -118,11 +118,19 @@ jobs:
 
             ## Testing status
 
-            **Pre-release.** Built and packaged by CI against SPT 4.1.2 references, and that is all that has been established so far. It has **never been loaded by the game**: not on a server, not on a headless client, not on a player client, and no raid has been run with it.
+            Verified on a live **SPT 4.1.2** stack with a Fika headless client, which is a full SPT client and loads plugins exactly as a player client does:
 
-            The plugin touches bundle loading, which happens on every client at startup, so a fault here shows up as a slow, failed or hanging load rather than something subtle. Test it somewhere you can afford to break.
+            ```
+            MaxConcurrentCrc set to 10 (configured: 0, CPU cores: 10)
+            [Performance] Hooked into 'com.s8.sptpatchcrc32' native accelerator successfully!
+            ValidateBundlesStreamingAsync: Starting parallel bundle validation for 25 bundles using Native PCLMULQDQ
+            ValidateBundlesStreamingAsync: Validation completed. Valid: 25/25
+            Init_Prefix: Validation succeeded! Fast path enabled. Bypassing SPT serial hash checks.
+            ```
 
-            Being verified now on a 4.1.2 stack with a headless and a player client. A stable release follows once that passes.
+            All bundles validated, the fast path engaged, and no load errors. Note `CPU cores: 10` producing 10 concurrent tasks, where upstream would have capped at 8.
+
+            **Not yet exercised across a full raid**, and not tested on hardware other than the machine above. If something misbehaves it will show up as slow or failed bundle loading at startup, so you will know quickly.
 
             ## Credits
 

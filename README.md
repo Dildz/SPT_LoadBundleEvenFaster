@@ -43,7 +43,8 @@ the call as `SPT.Custom.Utils.Crc32.Update(...)` resolves it.
 
 ## Installation
 
-Copy the plugin DLL into your game folder so that you end up with:
+Grab the zip from the [Releases page](https://github.com/Dildz/SPT_LoadBundleEvenFaster/releases)
+and extract it into your game folder, or copy the plugin DLL there yourself, so that you end up with:
 
 ```
 BepInEx/plugins/s8_SPT_LoadBundleEvenFaster/SPT_LoadBundleEvenFaster.Plugin.dll
@@ -53,7 +54,19 @@ That single DLL is the whole plugin. **Do not copy the rest of the build output*
 copy of every reference assembly next to it, including the game's own `Assembly-CSharp.dll`, and
 loading duplicates of those would break BepInEx.
 
-On first run the plugin writes `BepInEx/config/com.s8.sptloadbundleevenfaster.cfg`.
+On first run the plugin writes `BepInEx/config/com.s8.sptloadbundleevenfaster.cfg`. A successful
+start looks like this in the BepInEx log, with your own core count:
+
+```
+MaxConcurrentCrc set to 10 (configured: 0, CPU cores: 10)
+[Performance] Hooked into 'com.s8.sptpatchcrc32' native accelerator successfully!
+ValidateBundlesStreamingAsync: Validation completed. Valid: 25/25
+Init_Prefix: Validation succeeded! Fast path enabled. Bypassing SPT serial hash checks.
+```
+
+The second line only appears if [SPT_PatchCrc32](https://github.com/Dildz/SPT_PatchCrc32) is also
+installed. Without it you get `[Performance Tip] Native CRC32 accelerator not found!` instead, and
+validation still works using SPT's managed implementation.
 
 ## Building
 
