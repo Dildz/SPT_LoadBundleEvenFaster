@@ -1,3 +1,32 @@
+> # ⚠️ ARCHIVED: obsolete as of SPT 4.1.3
+>
+> **Do not use this on SPT 4.1.3 or later. It does not work, and it is not worth porting.**
+>
+> SPT 4.1.3 removed the mechanism this plugin exists to speed up. In 4.1.2 and earlier,
+> `SPT.Custom.Utils.BundleManager.ShouldAcquire` read every bundle off disk and CRC32'd it,
+> one at a time, to decide whether the cached copy was still valid. With a large modlist that
+> is thousands of full file reads, and parallelising it is what this fork did.
+>
+> In 4.1.3 that method is **gone**, along with `SPT.Custom.Utils.Crc32` and `BundleCrcCache`.
+> The bundle cache is now content addressed:
+>
+> ```csharp
+> // SPT 4.1.3, BundleManager.GetBundleFilePath
+> "SPT_Runtime/user/cache/bundles/" + bundle.Crc.ToString("X8") + "/" + bundle.FileName
+> ```
+>
+> The CRC is part of the path, so a file existing at that location is valid by construction.
+> There is no validation pass left to accelerate, and no `ShouldAcquire` left to patch.
+>
+> Running it on 4.1.3 is actively harmful: the plugin still references `SPT.Custom.Utils.Crc32`,
+> which no longer exists, so the client throws
+> `Could not resolve type ... 'SPT.Custom.Utils.Crc32' in assembly 'spt-custom, Version=4.1.2.0'`
+> and **bundle loading fails wholesale** (`1214 of 1214 mod bundles were found in neither the
+> bundle cache nor a mod folder`).
+>
+> Upstream solved the problem properly. Nothing here is worth carrying forward.
+> The branch and tags are kept for reference against SPT 4.1.2 and earlier.
+
 # SPT_LoadBundleEvenFaster (SPT 4.1 port)
 
 Speeds up SPT's bundle loading by validating bundle checksums in parallel instead of one at a time.
